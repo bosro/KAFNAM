@@ -126,6 +126,43 @@
             transform: translateX(0);
         }
 
+        .fade-in.force-visible,
+        .slide-in-left.force-visible,
+        .slide-in-right.force-visible {
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+
+        img {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        img.loaded {
+            opacity: 1;
+        }
+
+        /* Fallback for slow loading images */
+        img {
+            animation: imageBackup 4s ease forwards;
+        }
+
+        @keyframes imageBackup {
+            0% {
+                opacity: 0;
+            }
+
+            95% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+
         /* Enhanced Gallery Styles for Mobile */
         .gallery-grid {
             display: grid;
@@ -579,6 +616,29 @@
             font-family: 'Playfair Display', serif;
             text-align: center;
             padding: 20px;
+        }
+
+        @keyframes emergencyShow {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        /* Apply emergency animation to all potentially hidden elements */
+        .fade-in,
+        .slide-in-left,
+        .slide-in-right {
+            animation: emergencyShow 0.5s ease forwards 6s;
+        }
+
+        /* Ensure gallery is always visible eventually */
+        #gallery {
+            animation: emergencyShow 0.5s ease forwards 4s;
         }
     </style>
 </head>
@@ -1973,10 +2033,59 @@
             });
         }, observerOptions);
 
+        // Observe all animation elements
         document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right').forEach(el => {
             observer.observe(el);
         });
 
+        function forceShowAnimatedElements() {
+            const hiddenElements = document.querySelectorAll('.fade-in:not(.visible), .slide-in-left:not(.visible), .slide-in-right:not(.visible)');
+
+            if (hiddenElements.length > 0) {
+                console.log('Forcing visibility for', hiddenElements.length, 'hidden elements');
+                hiddenElements.forEach(el => {
+                    el.classList.add('visible');
+                });
+            }
+        }
+        setTimeout(forceShowAnimatedElements, 3000);
+
+        let hasScrolled = false;
+        window.addEventListener('scroll', () => {
+            if (!hasScrolled) {
+                hasScrolled = true;
+                setTimeout(forceShowAnimatedElements, 1000);
+            }
+        });
+
+        function handleImageLoading() {
+            const images = document.querySelectorAll('img');
+
+            images.forEach(img => {
+                // If image is already loaded
+                if (img.complete && img.naturalHeight !== 0) {
+                    img.classList.add('loaded');
+                } else {
+                    // Wait for image to load
+                    img.addEventListener('load', function () {
+                        this.classList.add('loaded');
+                    });
+
+                    // Handle loading errors
+                    img.addEventListener('error', function () {
+                        console.log('Image failed to load:', this.src);
+                        this.classList.add('loaded'); // Show placeholder or hide gracefully
+                    });
+
+                    // Backup: Force show after 3 seconds
+                    setTimeout(() => {
+                        if (!img.classList.contains('loaded')) {
+                            img.classList.add('loaded');
+                        }
+                    }, 3000);
+                }
+            });
+        }
         // Image Modal Functions
         function openModal(element) {
             const modal = document.getElementById('imageModal');
@@ -2134,30 +2243,68 @@
 
         // 🔥 INITIALIZE EVERYTHING WHEN PAGE LOADS 🔥
         window.addEventListener('load', () => {
-            console.log('Page loaded, initializing...');
+            console.log('Page loaded, initializing everything...');
 
-            // Give page time to fully load
+            // Handle image loading
+            handleImageLoading();
+
+            // Force show critical elements immediately
             setTimeout(() => {
-                console.log('Starting QR generation...');
-                generateQR();
+                const criticalElements = document.querySelectorAll('#gallery .fade-in, #gallery .slide-in-left, #gallery .slide-in-right');
+                criticalElements.forEach(el => {
+                    if (!el.classList.contains('visible')) {
+                        el.classList.add('visible');
+                    }
+                });
             }, 1000);
+
+            // Generate QR code
+            setTimeout(() => {
+                generateQR();
+            }, 1500);
 
             // Check location modal
             checkLocationModal();
         });
 
-        // Also try on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded...');
-            // Only show modal here, wait for full load for QR
+            console.log('DOM loaded, preparing elements...');
+
+            // Pre-handle images
+            handleImageLoading();
+
+            // Force show gallery section after short delay
+            setTimeout(() => {
+                const gallerySection = document.getElementById('gallery');
+                if (gallerySection) {
+                    const galleryElements = gallerySection.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right');
+                    galleryElements.forEach(el => {
+                        if (!el.classList.contains('visible')) {
+                            el.classList.add('visible');
+                        }
+                    });
+                }
+            }, 2000);
+
             checkLocationModal();
         });
 
-        // Also trigger on DOMContentLoaded for faster loading
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, will show modal...');
-            checkLocationModal();
-        });
+        setTimeout(() => {
+            console.log('Emergency fallback: Showing all hidden elements');
+            forceShowAnimatedElements();
+
+            // Also force show all images
+            document.querySelectorAll('img:not(.loaded)').forEach(img => {
+                img.classList.add('loaded');
+            });
+
+            // Force show the entire gallery section
+            const gallerySection = document.getElementById('gallery');
+            if (gallerySection && gallerySection.style.opacity === '0') {
+                gallerySection.style.opacity = '1';
+                gallerySection.style.transform = 'none';
+            }
+        }, 5000);
 
         // Cleanup scanner on page unload
         window.addEventListener('beforeunload', () => {
