@@ -310,21 +310,35 @@
             background-color: rgba(139, 38, 53, 0.3);
             backdrop-filter: blur(10px);
             animation: modalFadeIn 0.5s ease-out;
+            overflow-y: auto;
+            /* Allow scrolling */
+            padding: 10px;
+            /* Add padding for mobile */
         }
 
         .location-modal-content {
             position: relative;
-            margin: auto;
-            top: 50%;
-            transform: translateY(-50%);
+            margin: 40px auto 20px auto;
+            /* Changed from centering to top margin */
             width: 95%;
             max-width: 600px;
+            max-height: calc(100vh - 60px);
+            /* Ensure it doesn't exceed viewport */
             background: white;
             border-radius: 25px;
             overflow: hidden;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
             animation: modalSlideIn 0.6s ease-out;
+            display: flex;
+            flex-direction: column;
         }
+
+        .location-modal-content .p-6:last-child {
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+            /* Account for header */
+        }
+
 
         @keyframes modalFadeIn {
             from {
@@ -439,10 +453,14 @@
             cursor: pointer;
             transition: all 0.3s ease;
             z-index: 2001;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            /* Better visibility */
         }
 
         .location-close:hover {
-            background: rgba(139, 38, 53, 0.2);
+            background: #eee;
+            border: 1px solid #000;
+            border-radius: 50%;
             transform: scale(1.1);
         }
 
@@ -587,6 +605,48 @@
             left: 100%;
         }
 
+        @media (max-width: 640px) {
+            .location-modal {
+                padding: 5px;
+            }
+
+            .location-modal-content {
+                margin: 20px auto 10px auto;
+                width: 98%;
+                max-height: calc(100vh - 40px);
+                border-radius: 20px;
+            }
+
+            .location-modal-content .gradient-bg {
+                padding: 20px 16px;
+                /* Reduce padding on mobile */
+            }
+
+            .location-modal-content .p-6 {
+                padding: 16px;
+                /* Reduce padding on mobile */
+            }
+
+            .map-container {
+                height: 200px;
+
+            }
+
+            .location-close {
+                top: 10px;
+                right: 15px;
+                width: 30px;
+                height: 30px;
+            }
+
+            /* Ensure buttons stack properly on very small screens */
+            .grid.grid-cols-1.sm\\:grid-cols-2.gap-4 {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+
+
         /* Responsive adjustments */
         @media (max-width: 640px) {
             .floating-location-btn {
@@ -596,13 +656,22 @@
                 height: 50px;
             }
 
+
+        }
+
+
+        @media (max-height: 500px) and (orientation: landscape) {
             .location-modal-content {
-                width: 98%;
                 margin: 10px auto;
+                max-height: calc(100vh - 20px);
+            }
+
+            .location-modal-content .gradient-bg {
+                padding: 15px;
             }
 
             .map-container {
-                height: 250px;
+                height: 150px;
             }
         }
 
@@ -1670,8 +1739,14 @@
 
         // Location Modal Functions
         function openLocationModal() {
-            document.getElementById('locationModal').style.display = 'block';
+            const modal = document.getElementById('locationModal');
+            modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
+
+            // Scroll to top of modal on mobile
+            setTimeout(() => {
+                modal.scrollTop = 0;
+            }, 100);
         }
 
         function closeLocationModal() {
